@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 import shop.shop_spring.cart.service.CartService;
-import shop.shop_spring.exception.DataNotFoundException;
+import shop.shop_spring.common.exception.DataNotFoundException;
 import shop.shop_spring.member.domain.Member;
 import shop.shop_spring.member.service.MemberServiceImpl;
 import shop.shop_spring.order.domain.Delivery;

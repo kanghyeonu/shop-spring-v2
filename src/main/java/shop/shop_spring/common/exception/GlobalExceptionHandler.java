@@ -1,4 +1,4 @@
-package shop.shop_spring.exception;
+package shop.shop_spring.common.exception;
 
 import jakarta.mail.MessagingException;
 import org.springframework.http.HttpStatus;

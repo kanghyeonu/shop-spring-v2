@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
 import shop.shop_spring.category.service.CategoryService;
 import shop.shop_spring.category.domain.Category;
-import shop.shop_spring.exception.DataNotFoundException;
+import shop.shop_spring.common.exception.DataNotFoundException;
 import shop.shop_spring.product.Dto.ProductCreationRequest;
 import shop.shop_spring.product.repository.ProductRepository;
 import shop.shop_spring.product.domain.Product;

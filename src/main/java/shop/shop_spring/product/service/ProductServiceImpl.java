@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import shop.shop_spring.category.service.CategoryService;
 import shop.shop_spring.category.domain.Category;
-import shop.shop_spring.exception.DataNotFoundException;
+import shop.shop_spring.common.exception.DataNotFoundException;
 import shop.shop_spring.product.Dto.ProductCreationRequest;
 import shop.shop_spring.product.Dto.ProductSearchCondition;
 import shop.shop_spring.product.Dto.ProductUpdateRequest;

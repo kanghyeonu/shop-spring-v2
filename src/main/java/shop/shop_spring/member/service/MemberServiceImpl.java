@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import shop.shop_spring.email.dto.EmailDto;
 import shop.shop_spring.email.EmailServiceImpl;
-import shop.shop_spring.exception.DataNotFoundException;
+import shop.shop_spring.common.exception.DataNotFoundException;
 import shop.shop_spring.member.dto.MemberCreationRequest;
 import shop.shop_spring.member.MemberForm;
 import shop.shop_spring.member.repository.MemberRepository;

@@ -8,7 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import shop.shop_spring.category.repository.CategoryRepository;
 import shop.shop_spring.category.service.CategoryService;
 import shop.shop_spring.category.domain.Category;
-import shop.shop_spring.exception.DataNotFoundException;
+import shop.shop_spring.common.exception.DataNotFoundException;
 
 import java.util.List;
 

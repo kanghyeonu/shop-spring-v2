@@ -3,7 +3,7 @@ package shop.shop_spring.payment.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import shop.shop_spring.exception.PaymentInitiationException;
+import shop.shop_spring.common.exception.PaymentInitiationException;
 import shop.shop_spring.payment.Dto.PaymentInitiationResponse;
 
 import java.math.BigDecimal;

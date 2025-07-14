@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import shop.shop_spring.exception.PaymentInitiationException;
+import shop.shop_spring.common.exception.PaymentInitiationException;
 import shop.shop_spring.payment.Dto.PaymentInitiationResponse;
 import shop.shop_spring.payment.service.PgApiClient;
 import shop.shop_spring.payment.service.RealPaymentService;
