@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<h3> 회원 정보 </h3>
+<p>사용자 이름: <span th:text="${username}"></span></p>
+
+<!-- 비밀번호 변경 섹션 -->
+<p>비밀번호: <span id="displayPasswordPlaceholder">********</span></p>
+<input id="newPasswordInput" style="display:inline" type="password" placeholder="새 비밀번호">
+<input id="confirmPasswordInput" style="display:inline" type="password" placeholder="새 비밀번호 확인">
+<button type="button" id="modifyPasswordBtn">비밀번호 수정 확인</button>
+
+<p>이름: <span th:text="${name}"></span></p>
+<!-- 생년월일 표시 -->
+<p>생년월일: <span id="displayBirthDate" th:text="${#temporals.format(birthDate, 'yyyy년 MM월 dd일')}"></span></p>
+<input  style="display:inline" type="text" id="birthDateInput" placeholder="변경할 생일 입력 예시: 19990412">
+<button type="button" id="modifyBirthDateBtn">생일 정보 수정</button>
+
+<p>주소: <span id="displayAddress" th:text="${address}"></span></p>
+<input style="display:inline" type="text" id="addressInput" placeholder="변경할 배송지 주소 입력">
+<button type="button" id="modifyAddressBtn">배송지 정보 수정</button>
+
+<p>상세 주소: <span id="displayAddressDetail" th:text="${addressDetail}"></span></p>
+<input style="display:inline" type="text" id="addressDetailInput" placeholder="변경할 배송지 상세 주소 입력">
+<button type="button" id="modifyAddressDetailBtn">상세 배송지 정보 수정</button>
+
+<p>닉네임: <span id="displayNickName" th:text="${nickName}"></span></p>
+<input style="display:inline" type="text" id="nickNameInput" placeholder="변경할 별명 입력">
+<button type="button" id="modifyNickNameBtn">닉네임 변경</button>
+
+<button type="button" id="modifyMemberBtn">수정 완료</button>
+
+<script th:inline="javascript">
+    let hasUnsavedChanges = false; // 저장되지 않은 변경 사항이 있는지 추적하는 플래그
+    // 변경 데이터 임시 저장 객체
+    const changes = {
+        password: null,
+        birthDate: null,
+        address: null,
+        addressDetail: null,
+        nickName: null
+    };
+    // DOMContentLoaded: HTML 문서가 완전히 로드되고 파싱된 후 스크립트 실행
+    document.addEventListener('DOMContentLoaded', function() {
+        // 각 요소들에 대한 참조 가져오기
+        const displayUsername = document.getElementById('displayUsername');
+        const displayPasswordPlaceholder = document.getElementById('displayPasswordPlaceholder'); // 비밀번호는 ****로 표시
+        const displayName = document.getElementById('displayName'); // 이름은 변경하지 않는 것으로 가정
+        const displayBirthDate = document.getElementById('displayBirthDate');
+        const displayAddress = document.getElementById('displayAddress');
+        const displayAddressDetail = document.getElementById('displayAddressDetail');
+        const displayNickName = document.getElementById('displayNickName');
+
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+        const birthDateInput = document.getElementById('birthDateInput');
+        const addressInput = document.getElementById('addressInput');
+        const addressDetailInput = document.getElementById('addressDetailInput');
+        const nickNameInput = document.getElementById('nickNameInput');
+
+        const modifyPasswordBtn = document.getElementById('modifyPasswordBtn');
+        const modifyBirthDateBtn = document.getElementById('modifyBirthDateBtn');
+        const modifyAddressBtn = document.getElementById('modifyAddressBtn');
+        const modifyAddressDetailBtn = document.getElementById('modifyAddressDetailBtn');
+        const modifynickNameBtn = document.getElementById('modifyNickNameBtn');
+        const modifyMemberBtn = document.getElementById('modifyMemberBtn');
+
+        modifyPasswordBtn.addEventListener('click', function() {
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+
+            if (newPassword === "" && confirmPassword === "") {
+                alert("새 비밀번호를 입력해주세요.");
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+                newPasswordInput.value = '';
+                confirmPasswordInput.value = '';
+                return;
+            }
+
+            // 비밀번호는 화면에 변경된 것을 표시하지 않으므로, changes 객체에만 저장
+            changes.password = newPassword;
+            hasUnsavedChanges = true; // 변경 사항 발생 플래그 설정
+            alert("새 비밀번호가 확인되었습니다. '수정 완료' 버튼을 눌러 저장하세요.");
+            newPasswordInput.value = ''; // 입력 필드 초기화
+            confirmPasswordInput.value = '';
+        });
+
+        modifyBirthDateBtn.addEventListener('click', function() {
+            const newBirthDate = birthDateInput.value.trim(); // 앞뒤 공백 제거
+
+            if (newBirthDate === "") {
+                alert("변경할 생년월일을 입력해주세요.");
+                return;
+            }
+             // YYYYMMDD 형식 검사 (8자리 숫자인지)
+            const birthDatePattern = /^\d{8}$/; // 숫자 8개로 시작하고 끝나는지 검사
+
+            if (!birthDatePattern.test(newBirthDate)) {
+                alert("생년월일 형식이 올바르지 않습니다. YYYYMMDD 형식으로 입력해주세요 (예: 19990412).");
+                birthDateInput.value = ''; // 입력 필드 초기화
+                return; // 유효성 검사 실패 시 이후 로직 실행 중지
+            }
+
+            const year = parseInt(newBirthDate.substring(0, 4), 10);
+            const month = parseInt(newBirthDate.substring(4, 6), 10);
+            const day = parseInt(newBirthDate.substring(6, 8), 10);
+
+            if (month < 1 || month > 12 || day < 1 || day > 31) {
+                 alert("유효하지 않은 날짜입니다. 월과 일자를 확인해주세요.");
+                 birthDateInput.value = '';
+                 return;
+            }
+
+            // YYYYMMDD 문자열을 'YYYY년 MM월 DD일' 형식으로 포매팅하는 함수
+            function formatBirthDate(dateString) {
+                if (dateString && dateString.length === 8) {
+                    const year = dateString.substring(0, 4);
+                    const month = dateString.substring(4, 6);
+                    const day = dateString.substring(6, 8);
+                    return `${year}년 ${month}월 ${day}일`;
+                }
+                return dateString; // 형식이 맞지 않으면 원래 문자열 반환
+            }
+
+            // 포매팅된 날짜 문자열 생성
+            const formattedBirthDate = formatBirthDate(newBirthDate);
+            displayBirthDate.textContent = formattedBirthDate; // 입력된 값 그대로 표시
+
+            // 변경된 데이터를 changes 객체에 저장 (서버 전송용)
+            changes.birthDate = newBirthDate;
+            hasUnsavedChanges = true; // 변경 사항 발생 플래그 설정
+            alert("생년월일이 변경되었습니다. '수정 완료' 버튼을 눌러 저장하세요.");
+            birthDateInput.value = ''; // 입력 필드 초기화
+        });
+
+        modifyAddressBtn.addEventListener('click', function() {
+             const newAddress = addressInput.value.trim();
+
+            if (newAddress === "") {
+                alert("변경할 주소를 입력해주세요.");
+                return;
+            }
+
+            // 화면상의 주소 표시 업데이트
+            displayAddress.textContent = newAddress;
+
+            // 변경된 데이터를 changes 객체에 저장
+            changes.address = newAddress;
+            hasUnsavedChanges = true;
+            alert("주소가 변경되었습니다. '수정 완료' 버튼을 눌러 저장하세요.");
+            addressInput.value = '';
+        });
+
+        modifyAddressDetailBtn.addEventListener('click', function() {
+            const newAddressDetail = addressDetailInput.value.trim();
+
+            if (newAddressDetail === "") {
+                alert("변경할 상세 주소를 입력해주세요.");
+                return;
+            }
+
+            // 화면상의 상세 주소 표시 업데이트
+            displayAddressDetail.textContent = newAddressDetail;
+
+            // 변경된 데이터를 changes 객체에 저장
+            changes.addressDetail = newAddressDetail;
+            hasUnsavedChanges = true;
+            alert("상세 주소가 변경되었습니다. '수정 완료' 버튼을 눌러 저장하세요.");
+            addressDetailInput.value = '';
+        });
+
+        modifynickNameBtn.addEventListener('click', function() {
+             const newNickName = nickNameInput.value.trim();
+
+            if (newNickName === "") {
+                alert("변경할 닉네임을 입력해주세요.");
+                return;
+            }
+
+            // 화면상의 닉네임 표시 업데이트
+            displayNickName.textContent = newNickName;
+
+            // 변경된 데이터를 changes 객체에 저장
+            changes.nickName = newNickName;
+            hasUnsavedChanges = true;
+            alert("닉네임이 변경되었습니다. '수정 완료' 버튼을 눌러 저장하세요.");
+            nickNameInput.value = '';
+        });
+
+
+        // '수정 완료' 버튼 클릭 이벤트 리스너 (서버 전송)
+        modifyMemberBtn.addEventListener('click', async function() {
+            if (!hasUnsavedChanges) {
+                alert("변경할 내용이 없습니다.");
+                return;
+            }
+
+            // 서버로 보낼 데이터 객체 생성
+            // changes 객체에 저장된 변경 사항과, 변경되지 않았더라도 필요할 수 있는 기본 정보 포함
+            // 여기서는 변경된 내용만 보내는 것으로 가정합니다.
+            // 백엔드 API 설계에 따라 필요한 모든 필드를 포함해야 할 수도 있습니다.
+            const updateData = {};
+
+            updateData.username = [[${username}]];
+
+            // 변경된 항목만 데이터에 추가
+            if (changes.password !== null) {
+                updateData.password = changes.password; // 확인된 새 비밀번호
+            }
+             if (changes.birthDate !== null) {
+                // 서버에서 YYYYMMDD 형식을 기대한다면 birthDateInput.value를 바로 사용
+                updateData.birthDate = changes.birthDate; // 화면에 표시된 (입력한) 생일
+            }
+            if (changes.address !== null) {
+                updateData.address = changes.address;
+            }
+            if (changes.addressDetail !== null) {
+                updateData.addressDetail = changes.addressDetail;
+            }
+            if (changes.nickName !== null) {
+                updateData.nickName = changes.nickName;
+            }
+
+
+            try {
+                const response = await fetch('/api/members/my-page/profile', {
+                    method: 'PUT', // 회원 정보 수정은 보통 PUT 또는 PATCH 사용
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // 필요하다면 인증 토큰 (JWT 등) 헤더에 추가
+                        // 'Authorization': 'Bearer ' + YOUR_JWT_TOKEN
+                    },
+                    body: JSON.stringify(updateData) // 자바스크립트 객체를 JSON 문자열로 변환
+                });
+
+                if (!response.ok) { // HTTP 상태 코드가 200-299 범위를 벗어날 경우 오류 처리
+                    // 서버에서 에러 메시지를 JSON 형태로 보낸다면 파싱하여 표시
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '회원 정보 수정 중 오류가 발생했습니다.');
+                }
+
+                // 수정 성공 시
+                hasUnsavedChanges = false; // 변경 사항 없음으로 설정
+                alert("회원 정보가 성공적으로 수정되었습니다.");
+                window.location.href = '/members/my-page'; // /my-page 경로로 이동
+
+            } catch (error) {
+                // 오류 발생 시 메시지 표시
+                console.error('Error updating member info:', error);
+                alert("수정 실패: " + error.message);
+            }
+        });
+
+    window.addEventListener('beforeunload', function(event) {
+            if (hasUnsavedChanges) {
+                // 브라우저 표준 메시지를 트리거합니다.
+                // event.preventDefault()를 호출하고 event.returnValue에 문자열을 할당하면 됩니다.
+                // 대부분의 최신 브라우저는 사용자가 지정한 문자열 대신 기본 메시지를 표시합니다.
+                event.preventDefault();
+                event.returnValue = ''; // 이 코드를 통해 경고창이 표시됩니다.
+            }
+            // 변경 사항이 없으면 아무것도 반환하지 않아 기본 동작(페이지 이동)이 수행됩니다.
+        });
+
+    }); // DOMContentLoaded 끝
+
+</script>
+</body>
+</html>

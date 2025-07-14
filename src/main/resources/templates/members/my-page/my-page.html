@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<h4> My Page </h4>
+
+<div sec:authorize="isAuthenticated()" >
+    <h4><a href="my-page/profile">회원 정보 수정</a></h4>
+    <h4><a href="/cart/items">장바구니</a></h4>
+    <h4><a href="my-page/products">등록 상품 관리</a></h4>
+    <h4><a href="/orders/my-orders">주문 조회</a></h4>
+</div>
+
+<!--<div sec:authentication="principal"></div>-->
+<!--<div sec:authentication="principal.username"></div>-->
+<!--<div sec:authorize="hasAuthority('ROLE_USER')"></div>-->
+<!--<h4>이 유저는 일반 유저</h4>-->
+
+</body>
+</html>

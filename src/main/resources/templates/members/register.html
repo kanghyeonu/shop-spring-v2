@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<form id="signupForm" action="/members" method="POST">
+    <!-- 이메일 입력 및 인증 버튼 -->
+    <div id="emailRow">
+        <!-- 이메일 입력 -->
+        <input type="text" name="email" id="emailInput" placeholder="사용할 아이디(이메일)를 입력하세요" style="display:inline">
+        <!-- 이메일 인증 버튼 (처음엔 비활성화) -->
+        <button type="button" id="emailAuthBtn" class="btn-disabled" disabled>인증</button>
+    </div>
+
+    <!-- 이메일 인증 후 6자리 코드 입력 컨테이너 (처음 숨김) -->
+    <div id="emailVerificationContainer" style="display:none; margin-top:10px;">
+        <!-- 6자리 인증번호 입력 -->
+        <input type="text" id="verificationCode" name="verificationCode" placeholder="6자리 인증번호 입력" maxlength="6" style="display:inline">
+        <!-- 6자리 인증번호 인증 버튼 -->
+        <button type="button" id="codeVerifyBtn" class="btn-enabled">인증</button>
+    </div>
+
+    <!-- 나머지 입력 필드들 -->
+    <input name="password" type="password" placeholder="사용할 비밀번호를 입력하세요">
+    <input name="confirm_password" type="password" placeholder="비밀번호를 재입력하세요">
+    <input name="name" placeholder="이름을 입력햊세요">
+    <input name="birthDate" placeholder="생일8자리(19711012 등)를 입력해주세요">
+    <input name="address" placeholder="주소를 입력해주세요">
+    <input name="addressDetail" placeholder="상세 주소를 입력해주세요">
+    <input name="nickname" placeholder="별명을 입력하세요(선택)">
+
+    <!-- 가입 버튼: form 검증 후 제출 -->
+    <button type="button" onclick="isValid()">가입</button>
+</form>
+
+<script>
+    // 전역변수: 이메일 인증 완료 여부를 체크
+    let emailVerified = false;
+
+    // 이메일 입력, 인증 버튼, 6자리 인증 컨테이너, 6자리 입력, 코드 인증 버튼을 가져옴
+    const emailInput = document.getElementById('emailInput');
+    const emailAuthBtn = document.getElementById('emailAuthBtn');
+    const emailVerificationContainer = document.getElementById('emailVerificationContainer');
+    const verificationCodeInput = document.getElementById('verificationCode');
+    const codeVerifyBtn = document.getElementById('codeVerifyBtn');
+
+    // 올바른 이메일 형식 체크를 위한 정규식
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // 이메일 입력 이벤트: 입력할 때마다 형식을 체크하여 인증 버튼 활성/비활성화 처리
+    emailInput.addEventListener('input', function() {
+      // 사용자가 이메일을 수정하면, 기존 인증 상태 초기화
+      emailVerified = false;
+      emailAuthBtn.className = "btn-disabled";
+      emailAuthBtn.disabled = true;
+      // 6자리 인증 컨테이너 숨기고 입력값 초기화
+      emailVerificationContainer.style.display = 'none';
+      verificationCodeInput.value = "";
+
+      // 올바른 이메일 형식이면 인증 버튼 활성화
+      if (emailRegex.test(emailInput.value.trim())) {
+        emailAuthBtn.disabled = false;
+        emailAuthBtn.className = "btn-enabled";
+      } else {
+        emailAuthBtn.disabled = true;
+        emailAuthBtn.className = "btn-disabled";
+      }
+    });
+
+    // 이메일 인증 버튼 클릭 이벤트
+    emailAuthBtn.addEventListener('click', function() {
+        const emailValue = emailInput.value.trim(); // 입력된 이메일 값
+
+        // 이메일 유효성 검사
+        if (!emailRegex.test(emailValue)) {
+          alert("올바른 이메일 형식이 필요합니다.");
+          return; // 형식이 잘못된 경우 함수 종료
+        }
+
+        // 서버에 인증 메일 전송을 위한 POST 요청
+        fetch('/api/members/verify-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json' // JSON 형태로 데이터 전송
+          },
+          body: JSON.stringify({ email: emailValue }) // 요청 본문: 사용자가 입력한 이메일
+        })
+        .then(response => {
+          // 서버 응답이 정상이 아닐 경우에 오류 발생
+          if (!response.ok) {
+            throw new Error('서버 응답 에러');
+          }
+          return response.json(); // 응답을 JSON 형태로 파싱
+        })
+        .then(data => {
+          // 인증 요청 성공 시 처리
+          alert("인증 번호가 발송되었습니다."); // 인증 번호 발송 알림
+          emailVerificationContainer.style.display = 'block'; // 6자리 인증번호 입력 컨테이너 표시
+          emailAuthBtn.disabled = true; // 인증 버튼 비활성화
+          emailAuthBtn.className = "btn-disabled"; // 비활성화 스타일 적용
+        })
+        .catch(error => {
+          // 오류 발생 시 처리
+          console.error('Error:', error);
+          alert("인증 메일 전송에 실패했습니다. 다시 시도해주세요.");
+          // 필요 시 버튼 재활성화를 할 수 있음
+        });
+    });
+
+    // 6자리 인증번호 인증 버튼 클릭 이벤트
+    codeVerifyBtn.addEventListener('click', function() {
+
+      const emailValue = emailInput.value.trim(); // 입력된 이메일 값
+      // 6자리 인증번호가 정확한지 정규식으로 검증 (숫자 6자리)
+      const code = verificationCodeInput.value.trim();
+      const codeRegex = /^\d{6}$/;
+      if (!codeRegex.test(code)) {
+        alert("입력한 인증번호는 6자리 숫자여야 합니다.");
+        return;
+      }
+
+      // 서버에 랜덤 숫자를 전송을 위한 POST 요청
+        fetch('/api/members/validate-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json' // JSON 형태로 데이터 전송
+          },
+          body: JSON.stringify({
+            email: emailValue,
+            code: code
+          }) // 요청 본문: 사용자가 입력한 이메일
+        })
+        .then(response => {
+          // 서버 응답이 정상이 아닐 경우에 오류 발생
+          if (response.ok) {
+            alert("이메일 인증이 완료되었습니다.");  // 시뮬레이션 알림
+            // 인증이 성공하면 6자리 인증 버튼을 '인증 완료' 상태로 표시
+            codeVerifyBtn.textContent = "인증 완료";
+            codeVerifyBtn.disabled = true;
+            codeVerifyBtn.className = "btn-verified";
+
+             // 이메일 인증 완료 플래그 설정
+            emailVerified = true;
+             // 이메일 입력 필드를 읽기전용으로 바꿔 수정 불가하게 설정 (옵션)
+            emailInput.readOnly = true;
+
+          } else {
+            alert("인증번호가 올바르지 않거나 서버 오류가 발생했습니다."); // 일반적인 실패 메시지
+            // 버튼 상태를 원래대로 되돌리거나 실패 상태를 표시합니다.
+            codeVerifyBtn.disabled = false; // 버튼 다시 활성화
+            codeVerifyBtn.className = "btn-verify"; // 원래 스타일로 복원
+            emailVerified = false;
+            emailInput.readOnly = false; // 필요에 따라 입력 필드 다시 활성화
+          }
+
+        })
+
+
+    });
+
+    // 최종 폼 제출 전 검사 함수
+    function isValid() {
+      const form = document.getElementById('signupForm');
+      const email = form.email.value;
+      const password = form.password.value;
+      const confirmPassword = form.confirm_password.value;
+      const birthDate = form.birthDate.value;
+
+      if (!email || email.trim().length === 0) {
+        alert("이메일을 입력해주세요");
+        return;
+      }
+
+      // 이메일 인증 여부 확인
+      if (!emailVerified) {
+        alert("이메일 인증을 완료해주세요.");
+        return;
+      }
+
+      // 비밀번호 일치 여부 확인
+      if (password !== confirmPassword) {
+        alert("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+
+      if (birthDate.length !== 8 || !/^\d+$/.test(birthDate)) {
+        alert("생일의 입력은 8자리의 생년월일이여야 합니다.");
+        return;
+      }
+
+      // 모든 검사를 통과하면 폼 제출
+      form.submit();
+    }
+</script>
+
+</form>
+
+</body>
+</html>

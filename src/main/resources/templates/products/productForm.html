@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<form id="newProductForm" action="/api/products" method="POST">
+    <select id="parentCategorySelect">
+        <option value="">상위 카테고리 선택</option>
+    </select>
+
+    <select id="childCategorySelect" disabled>
+        <option value="">하위 카테고리 선택</option>
+    </select>
+
+    <input name="title" placeholder="상품 이름">
+    <input name="price" placeholder="상품 가격">
+    <input type="hidden" name="username", th:value="${username}" >
+    <input name="stockQuantity" placeholder="재고 수량">
+    <input name="description" placeholder="상품 설명">
+    <input name="thumbnailUrl" placeholder="상품 이미지 url (아직 구현x)">
+    <button type="button" onclick="applyProduct()">상품 등록</button>
+    <script>
+        // 페이지 로드 시 최상위 카테고리 로드
+        fetch('/api/categories/parents')
+            .then(response => response.json())
+            .then(data => {
+                const parentSelect = document.getElementById('parentCategorySelect');
+                data.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    parentSelect.appendChild(option);
+                });
+            });
+
+        // 최상위 카테고리 선택 시 하위 카테고리 로드
+        document.getElementById('parentCategorySelect').addEventListener('change', function() {
+            const parentId = this.value;
+            const childSelect = document.getElementById('childCategorySelect');
+            childSelect.innerHTML = '<option value="">하위 카테고리 선택</option>'; // 초기화
+
+            if (!parentId) {
+                childSelect.disabled = true;
+                return;
+            }
+
+            fetch(`/api/categories/children?parentId=${parentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        childSelect.disabled = true;
+                        return;
+                    }
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        childSelect.appendChild(option);
+                    });
+                    childSelect.disabled = false;
+                });
+        });
+        // --- applyProduct 함수 정의 ---
+function applyProduct() {
+    const form = document.getElementById('newProductForm');
+
+    // 1. 카테고리 ID 결정
+    // HTML에 parentCategorySelect와 childCategorySelect 드롭다운이 있어야 합니다.
+    const parentCategorySelect = document.getElementById('parentCategorySelect');
+    const childCategorySelect = document.getElementById('childCategorySelect');
+
+    let selectedCategoryId = '';
+    if (childCategorySelect && childCategorySelect.value) {
+        // 하위 카테고리가 선택되었으면 하위 카테고리 ID 사용
+        selectedCategoryId = childCategorySelect.value;
+    } else if (parentCategorySelect && parentCategorySelect.value) {
+        // 하위 카테고리 선택 안 됐고, 상위 카테고리 선택 됐으면 상위 카테고리 ID 사용
+        selectedCategoryId = parentCategorySelect.value;
+    } else {
+        // 카테고리가 전혀 선택되지 않음
+        alert('카테고리를 선택해주세요.');
+        return; // 함수 실행 중단
+    }
+
+    // 2. 다른 Input 값 수집
+    // 폼 요소의 name 속성을 사용하여 값 가져오기. HTML에 해당 name 속성을 가진 요소가 있어야 합니다.
+    const title = form.title.value;
+    const price = form.price.value;
+    const username = form.username.value; // 숨겨진 input 등에서 가져온 값
+    const stockQuantity = form.stockQuantity.value;
+    const description = form.description.value; // textarea 값
+    const thumbnailUrl = form.thumbnailUrl.value;
+
+    // 간단한 필수 필드 유효성 검사 (HTML required 속성 사용 권장)
+    if (!title || !price || !stockQuantity || !description || !selectedCategoryId) {
+        alert('모든 필수 항목을 입력하고 카테고리를 선택해주세요.');
+        return;
+    }
+
+    // 3. JSON 데이터 객체 생성
+    const productData = {
+        title: title,
+        price: parseFloat(price), // price는 숫자로 변환
+        username: username,
+        stockQuantity: parseInt(stockQuantity, 10), // stockQuantity는 정수로 변환
+        categoryId: parseInt(selectedCategoryId, 10), // categoryId는 정수로 변환 (API가 Long을 기대한다면)
+        description: description,
+        thumbnailUrl: thumbnailUrl
+    };
+
+    console.log('전송할 데이터:', productData); // 전송할 데이터 확인
+
+    // 4. Fetch API를 사용하여 POST 요청 전송
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json' // JSON 형태로 데이터 전송 명시
+            // 'X-CSRF-TOKEN': 'your-csrf-token' // Spring Security 사용 시 CSRF 토큰 필요할 수 있음
+        },
+        body: JSON.stringify(productData) // JavaScript 객체를 JSON 문자열로 변환하여 전송
+    })
+    .then(response => {
+        if (response.ok) { // 응답 상태 코드가 200-299 범위인지 확인
+            // 성공 응답 본문이 JSON 형태라고 가정하고 파싱합니다.
+            return response.json();
+        }
+        // 성공 범위가 아닌 경우 오류 응답 본문을 JSON으로 파싱 시도
+        return response.json().then(errorData => {
+             console.error('상품 등록 API 오류 응답:', errorData);
+             // 오류 메시지가 errorData.message에 있다면 사용, 없으면 기본 상태 텍스트 사용
+             throw new Error(`상품 등록 실패: ${errorData.message || response.statusText}`);
+        });
+    })
+    .then(savedProductId => {
+        // 등록 성공 시 처리
+        alert('상품이 성공적으로 등록되었습니다!');
+        // 성공 후 페이지 이동이나 폼 초기화 등 추가 작업 수행
+        // window.location.href = '/products/' + savedProduct.id; // 예: 등록된 상품 상세 페이지로 이동
+        form.reset(); // 폼 초기화
+        // 카테고리 드롭다운 초기 상태로 되돌리기
+        document.getElementById('childCategorySelect').innerHTML = '<option value="">하위 카테고리 선택</option>';
+        document.getElementById('childCategorySelect').disabled = true;
+        document.getElementById('parentCategorySelect').value = ""; // 상위 카테고리 선택 해제
+
+    })
+    .catch(error => {
+        // 요청 자체 실패 (네트워크 오류 등) 또는 오류 응답 처리
+        console.error('상품 등록 중 오류 발생:', error);
+        alert('상품 등록에 실패했습니다: ' + error.message);
+    });
+}
+
+    </script>
+
+    <!-- 가입 버튼: form 검증 후 제출 -->
+<!--    <button type="button" onclick="isValid()">가입</button>-->
+</form>
+</body>

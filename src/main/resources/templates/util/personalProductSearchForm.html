@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+
+
+<!-- 상품 검색 및 카테고리 필터 폼 Fragment -->
+<!-- 폼 ID 변경 및 스타일 수정 -->
+<form th:fragment="searchForm" id="productSearchForm" action="/products" method="GET" style="margin-bottom: 20px;">
+
+    <!-- 카테고리 드롭다운 (상위 카테고리만 - JS로 로드) -->
+    <select name="category" id="searchCategorySelect" style="vertical-align: middle;">
+        <option value="">전체 카테고리</option>
+        <!-- JS에 의해 옵션들이 여기에 추가될 것입니다. -->
+    </select>
+
+    <!-- 상품 이름 검색 입력 상자 -->
+    <div style="margin-top: 10px;">
+        <!-- name="name" -> name="title" 로 변경 -->
+        <!-- th:value="${currentName}" -> th:value="${currentTitle}" 로 변경 -->
+        <input type="text" name="title" placeholder="판매 등록 상품 이름 검색" style="display: inline-block; vertical-align: middle;" th:value="${currentTitle}">
+        <input type="hidden" name="username" th:value="${username}" >
+        <!-- 검색 버튼 -->
+        <button type="submit" style="display: inline-block; vertical-align: middle; margin-left: 5px;">검색</button>
+    </div>
+
+    <script th:inline="javascript">
+        // 페이지 로드 완료 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.getElementById('searchCategorySelect');
+            const currentCategoryId = [[${currentCategoryId}]]; // 컨트롤러에서 받은 현재 카테고리 ID
+
+            fetch('/api/categories/parents')
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to fetch categories:', response.status, response.statusText);
+                        throw new Error('Failed to fetch categories: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        if (currentCategoryId != null && category.id == currentCategoryId) {z
+                           option.selected = true;
+                        }
+                        categorySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error("카테고리 목록 로딩 중 오류 발생:", error);
+                });
+        });
+    </script>
+
+</form>
+</body>

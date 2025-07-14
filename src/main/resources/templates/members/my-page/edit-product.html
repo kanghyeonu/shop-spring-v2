@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<div th:replace="~{ util/personalProductSearchForm::searchForm }"></div>
+
+<div th:if="${product != null}">
+
+    <img src="https://placehold.co/300">
+    <p th:text="${product.category.name}">없음</p>
+    <h4>
+        <span th:if="${product.status.name() == 'ACTIVE'}">판매중</span>
+        <span th:if="${product.status.name() == 'SOLD_OUT'}">품절</span>
+        <span th:if="${product.status.name() == 'INACTIVE'}">비활성화</span>
+    </h4>
+    <select id="productStatus" name="status">
+        <!-- 기본값 또는 전체 선택 옵션 (선택 사항) -->
+        <option value="">-- 상품 상태 설정 --</option>
+        <option value="ACTIVE">판매중</option>
+        <option value="SOLD_OUT">품절</option>
+        <option value="INACTIVE">비활성화</option>
+    </select>
+    <h4 th:text="${product.title}" >바지</h4>
+    <input type="text" id="newTitleInput" placeholder="변경할 이름">
+    <h4 th:text="${product.price} + '원'">100억</h4>
+    <input type="text" id="newPriceInput" placeholder="변경할 가격">
+    <h4 th:text="'재고: ' + ${product.stockQuantity}">없음</h4>
+    <input type="text" id="newStockQuantityInput" placeholder="변경할 재고 수량">
+    <h4 th:text="'상품 설명: ' + ${product.description.description}">없음</h4>
+    <input type="text" id="newDescriptionInput" placeholder="변경할 상품 설명">
+
+    <h4>상품 이미지 변경 (구현 x)</h4>
+    <button type="button" id="updateProductButton">상품 수정</button>
+    <button type="button" id="deleteProductButton">상품 삭제</button>
+</div>
+
+<div th:if="${product == null}">
+    <p>삭제된 상품</p>
+</div>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const updateButton = document.getElementById('updateProductButton');
+        const deleteButton = document.getElementById('deleteProductButton');
+
+        deleteButton.addEventListener('click', function() {
+            const productId = [[${product.id}]];
+
+            const deleteUrl = `/api/members/my-page/products/${productId}`;
+
+            if (confirm('정말로 삭제?')){
+                fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                    }
+                })
+                .then(response => {
+                    if (response.ok || reponse.status === 204){
+                        alert('상품이 삭제됨')
+                        window.location.href = '/members/my-page/products';
+                    } else {
+                        response.json().then(data => {
+                            alert(`상품 삭제 실패: ${data.message || response.statusText}`);
+                            console.error('삭제 실패 응답:', response.status, data);
+                        }).catch(() => {
+                            // JSON 파싱 실패 시 일반적인 에러 메시지
+                             alert(`상품 삭제 실패: ${response.statusText}`);
+                             console.error('삭제 실패 응답:', response.status);
+                        });
+                    }
+                })
+                .catch(error => {
+                    // 네트워크 오류 등 예외 처리
+                    console.error('상품 삭제 중 오류 발생:', error);
+                    alert('상품 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+                });
+            }
+        });
+
+        updateButton.addEventListener('click', function() { // <--- 이 부분을 수정했습니다.
+
+            const productId = [[${product.id}]];
+            const productStatusSelect = document.getElementById('productStatus');
+            const newTitleInput = document.getElementById('newTitleInput');
+            const newPriceInput = document.getElementById('newPriceInput');
+            const newStockQuantityInput = document.getElementById('newStockQuantityInput');
+            const newDescriptionInput = document.getElementById('newDescriptionInput');
+
+            const statusToSend = productStatusSelect.value === '' ? [[${product.status}]] : productStatusSelect.value;
+
+            const titleToSend = newTitleInput.value.trim() === '' ? [[${product.title}]] : newTitleInput.value.trim();
+
+            const priceValue = newPriceInput.value.trim();
+            const priceToSend = priceValue === '' ? [[${product.price}]] : parseInt(priceValue, 10); // 입력된 값이 있으면 숫자로 파싱
+
+            const stockQuantityValue = newStockQuantityInput.value.trim();
+            const stockQuantityToSend = stockQuantityValue === '' ?[[${product.stockQuantity}]] : parseInt(stockQuantityValue, 10); // 입력된 값이 있으면 숫자로 파싱
+
+            const descriptionToSend = newDescriptionInput.value.trim() === '' ? [[${product.description.description}]] : newDescriptionInput.value.trim();
+
+            if (priceValue !== '' && isNaN(priceToSend)) {
+                 alert('가격은 숫자로만 입력해주세요.');
+                 newPriceInput.focus();
+                 return; // 함수 실행 중단
+            }
+            if (stockQuantityValue !== '' && isNaN(stockQuantityToSend)) {
+                 alert('재고 수량은 숫자로만 입력해주세요.');
+                 newStockQuantityInput.focus();
+                 return; // 함수 실행 중단
+            }
+
+            if (productStatusSelect.value === '') {
+                 alert('상품 상태를 설정해주세요.');
+                 productStatusSelect.focus();
+                 return; // 함수 실행 중단
+            }
+
+             const updatedProductData = {
+                status: statusToSend,
+                title: titleToSend,
+                price: priceToSend,
+                stockQuantity: stockQuantityToSend,
+                description: descriptionToSend,
+                thumbnailUrl: null
+             };
+
+             fetch(/*[[@{/api/members/my-page/products/{id}(id=${product.id})}]]*/ '', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedProductData)
+             })
+             .then(response => {
+                // 응답 상태 코드 확인 (200번대 코드가 아니면 에러 처리)
+                if (!response.ok) {
+                    // 에러 응답의 body를 읽어서 에러 메시지 추출 시도
+                    return response.text().then(text => {
+                        try {
+                            const errorData = JSON.parse(text);
+                            throw new Error(errorData.message || `HTTP 오류! 상태 코드: ${response.status}`);
+                        } catch (e) {
+                            // JSON 형식이 아니거나 파싱 오류 발생 시
+                            throw new Error(`HTTP 오류! 상태 코드: ${response.status} - ${text}`);
+                        }
+                    });
+                }
+                // 성공 응답 처리
+                // 서버에서 204 No Content를 반환하는 경우 body가 없을 수 있습니다.
+                if (response.status === 204) {
+                   return null; // 처리할 내용 없음
+                }
+                // 그 외의 200번대 성공 코드에 대해 JSON 응답 파싱
+                return response.json();
+             })
+             .then(data => {
+                // 성공적으로 상품 수정 완료 후 처리
+                if (data !== null) {
+                    console.log('상품 수정 성공:', data);
+                } else {
+                     console.log('상품 수정 성공 (본문 없음)');
+                }
+                alert('상품이 성공적으로 수정되었습니다.');
+                // 페이지를 새로고침하거나 수정된 내용을 화면에 반영
+                location.reload();
+            })
+            .catch((error) => {
+                // 요청 실패 또는 에러 처리
+                console.error('상품 수정 중 오류 발생:', error);
+                alert('상품 수정 중 오류가 발생했습니다: ' + error.message);
+            });
+        });
+
+    });
+
+
+</script>
+
+</body>
+</html>

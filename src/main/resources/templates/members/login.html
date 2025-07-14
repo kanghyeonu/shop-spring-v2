@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<h4> Let's Login </h4>
+
+<div th:if="${param.error}">
+    <h4>잘못된 아이디 또는 비밀번호입니다.</h4>
+</div>
+
+<form>
+    <input name="username", id="username">
+    <input name="password" type="password" id="password">
+</form>
+<button onclick="login()">로그인</button>
+
+<script>
+    function login(){
+      fetch('/api/members/login', {
+        method : 'POST',
+        headers : {'Content-Type': 'application/json'},
+        body : JSON.stringify({
+          username : document.querySelector('#username').value,
+          password : document.querySelector('#password').value
+        })
+      }).then(response => {
+        // response.ok는 200-299 범위의 상태 코드일 때 true
+        if (!response.ok){
+          // response.status를 사용하여 구체적인 상태 코드 확인
+          if (response.status >= 400 && response.status < 500) { // 400번대 오류인지 확인
+               alert("올바르지 않은 아이디 또는 비밀번호");
+          } else {
+              // 400번대가 아닌 다른 실패 (예: 500번대 서버 오류) 처리
+              // 필요하다면 다른 메시지를 띄우거나 로깅 등을 할 수 있습니다.
+              console.error("로그인 중 서버 오류 발생:", response.status);
+              // alert("로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+          }
+        } else {
+            // response.ok가 true인 경우 (200-299), 로그인 성공 처리
+            // 별도의 동작이 필요 없다면 이 else 블록은 비워두거나 제거할 수 있습니다.
+            // 또는 로그인 성공 후 리다이렉션 등의 로직을 여기에 추가할 수 있습니다.
+            console.log("로그인 성공!");
+            //window.location.href = '/main'; // 메인 페이지로 이동
+        }
+      })
+      .catch(error => {
+          // 네트워크 오류나 fetch 자체에서 발생하는 오류 처리
+          console.error("로그인 fetch 오류:", error);
+          alert("네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.");
+      });
+    }
+</script>
+<button type="button" id="findPasswordBtn">비밀번호 찾기</button>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+            const findPasswordButton = document.getElementById('findPasswordBtn');
+
+            // 버튼에 클릭 이벤트 리스너 추가
+            if (findPasswordButton) { // 버튼 요소가 존재하는지 확인
+                findPasswordButton.addEventListener('click', function() {
+                    // 버튼 클릭 시 '/password-reset' 경로로 페이지 이동
+                    window.location.href = '/members/password-reset';
+                });
+            } else {
+                console.error("ID가 'findPasswordButton'인 요소를 찾을 수 없습니다.");
+            }
+    });
+
+</script>
+</body>
+</html>

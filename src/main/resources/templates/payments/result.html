@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 결과 선택</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { margin-bottom: 20px; }
+        p { font-size: 1.1em; margin-bottom: 10px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 5px; }
+        .success-button { background-color: #28a745; color: white; }
+        .cancel-button { background-color: #dc3545; color: white; }
+        button:hover { opacity: 0.9; }
+        #result-message { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>결제 결과 선택</h1>
+    <p th:text="${message}">결제 페이지로 이동했습니다. 결제 결과를 선택해주세요.</p>
+    <p>주문 번호: <span id="orderIdDisplay" th:text="${orderId}"></span></p>
+    <p>PG 토큰: <span id="pgTokenDisplay" th:text="${pgToken}"></span></p>
+
+    <div>
+        <button id="paymentSuccessButton" class="success-button">결제 성공</button>
+        <button id="paymentCancelButton" class="cancel-button">결제 취소</button>
+    </div>
+
+    <div id="result-message"></div>
+</div>
+
+<script th:inline="javascript">
+    // Thymeleaf를 통해 서버에서 전달받은 데이터
+    const orderId = [[${orderId}]];
+    const pgToken = [[${pgToken}]];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const paymentSuccessButton = document.getElementById('paymentSuccessButton');
+        const paymentCancelButton = document.getElementById('paymentCancelButton');
+        const resultMessageDiv = document.getElementById('result-message');
+
+        // 결제 성공 버튼 클릭 이벤트
+        paymentSuccessButton.addEventListener('click', async () => {
+            resultMessageDiv.textContent = '결제 성공 처리 중...';
+            resultMessageDiv.style.color = 'blue';
+            await sendPaymentCallback('/payments/mock-callback/success', orderId, resultMessageDiv);
+        });
+
+        // 결제 취소 버튼 클릭 이벤트
+        paymentCancelButton.addEventListener('click', async () => {
+            resultMessageDiv.textContent = '결제 취소 처리 중...';
+            resultMessageDiv.style.color = 'orange';
+            await sendPaymentCallback('/payments/mock-callback/failure', orderId, resultMessageDiv);
+        });
+
+        // PG사 Callback을 시뮬레이션하는 함수
+        async function sendPaymentCallback(url, orderId, messageDiv) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orderId: orderId, pgToken: pgToken, status: url.includes('success') ? 'success' : 'failure' })
+                });
+
+                if (response.ok) {
+                    const textResponse = await response.text(); // 응답이 "OK" 문자열이므로 text()로 파싱
+                    if (textResponse === 'OK') {
+                        messageDiv.textContent = `백엔드 처리 완료: ${url.includes('success') ? '결제 성공' : '결제 취소'}`;
+                        messageDiv.style.color = url.includes('success') ? 'green' : 'red';
+                        // 실제 서비스에서는 여기서 사용자에게 최종 결과 페이지를 보여주거나 메인으로 리다이렉션
+                        // alert('백엔드 처리 완료! 주문 상태를 확인하세요.');
+                    } else {
+                        messageDiv.textContent = `백엔드 처리 실패: ${textResponse}`;
+                        messageDiv.style.color = 'red';
+                    }
+                } else {
+                    const errorText = await response.text();
+                    messageDiv.textContent = `백엔드 통신 오류: ${response.status} - ${errorText}`;
+                    messageDiv.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Callback 요청 중 오류 발생:', error);
+                messageDiv.textContent = `네트워크 오류: ${error.message}`;
+                messageDiv.style.color = 'red';
+            }
+        }
+    });
+</script>
+</body>
+</html>

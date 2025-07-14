@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 상세</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .detail-container { max-width: 800px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        .section-title { font-size: 1.3em; margin-top: 25px; margin-bottom: 15px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .detail-item { margin-bottom: 10px; }
+        .detail-item strong { display: inline-block; width: 120px; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f7f7f7; }
+        .back-button { display: inline-block; margin-top: 30px; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .back-button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div> <!-- 네비게이션 바 포함 (예시) -->
+
+<div class="detail-container">
+    <h1>주문 상세 정보</h1>
+
+    <div th:if="${orderDetails == null}">
+        <p th:text="${errorMessage ?: '주문 상세 정보를 찾을 수 없습니다.'}"></p>
+        <a href="/orders/my-orders" class="back-button">주문 목록으로 돌아가기</a>
+    </div>
+
+    <div th:if="${orderDetails != null}">
+        <h2 class="section-title">주문 정보</h2>
+        <div class="detail-item"><strong>주문 번호:</strong> <span th:text="${orderDetails.orderId}"></span></div>
+        <div class="detail-item"><strong>주문자:</strong> <span th:text="${orderDetails.ordererName}"></span></div>
+        <div class="detail-item"><strong>주문 날짜:</strong> <span th:text="${#temporals.format(orderDetails.orderDate, 'yyyy-MM-dd HH:mm')}"></span></div>
+        <div class="detail-item"><strong>총 금액:</strong> <span th:text="${#numbers.formatDecimal(orderDetails.totalAmount, 0, 'COMMA', 0, 'POINT')} + '원'"></span></div>
+        <div class="detail-item"><strong>주문 상태:</strong> <span th:text="${orderDetails.status.displayName}"></span></div>
+        <div class="detail-item"><strong>결제 수단:</strong> <span th:text="${orderDetails.paymentMethod}"></span></div>
+
+        <h2 class="section-title">배송 정보</h2>
+        <div class="detail-item"><strong>수령인:</strong> <span th:text="${orderDetails.receiverName}"></span></div>
+        <div class="detail-item"><strong>주소:</strong> <span th:text="${orderDetails.address}"></span></div>
+        <div class="detail-item"><strong>배송 메시지:</strong> <span th:text="${orderDetails.deliveryMessage ?: '-'}"></span></div>
+        <div class="detail-item"><strong>배송 상태:</strong> <span th:text="${orderDetails.deliveryStatus.displayName}"></span></div>
+
+        <h2 class="section-title">주문 상품</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>상품 ID</th>
+                <th>상품명</th>
+                <th>수량</th>
+                <th>단가</th>
+                <th>총 금액</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${orderDetails.orderItems}">
+                <td th:text="${item.productId}"></td>
+                <td th:text="${item.productName}"></td>
+                <td th:text="${item.quantity}"></td>
+                <td th:text="${#numbers.formatDecimal(item.orderPrice, 0, 'COMMA', 0, 'POINT')} + '원'"></td>
+                <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + '원'"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <a href="/orders/my-orders" class="back-button">주문 목록으로 돌아가기</a>
+    </div>
+</div>
+
+</body>
+</html>

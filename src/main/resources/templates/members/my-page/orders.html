@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>나의 주문 목록</title>
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .order-list-container { max-width: 800px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        .no-orders { text-align: center; color: #666; margin-top: 30px; }
+        .order-id-link { color: #007bff; text-decoration: none; font-weight: bold; }
+        .order-id-link:hover { text-decoration: underline; }
+        .cancel-button {
+            background-color: #dc3545; /* 빨간색 */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .cancel-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{ util/nav.html::navbar }"></div>
+
+<div class="order-list-container">
+    <h1>나의 주문 목록</h1>
+
+    <div th:if="${orderSummaries.isEmpty()}" class="no-orders">
+        <p>아직 주문 내역이 없습니다.</p>
+    </div>
+
+    <div th:unless="${orderSummaries.isEmpty()}">
+        <table>
+            <thead>
+            <tr>
+                <th>주문 번호</th>
+                <th>주문 날짜</th>
+                <th>총 금액</th>
+                <th>주문 상태</th>
+                <th>관리</th> <!-- 새로운 컬럼 추가 -->
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="orderSummary : ${orderSummaries}">
+                <td>
+                    <a href="#" class="order-id-link" th:href="@{/orders/{id}(id=${orderSummary.orderId})}" th:text="${orderSummary.orderId}">12345</a>
+                </td>
+                <td th:text="${#temporals.format(orderSummary.orderDate, 'yyyy-MM-dd HH:mm')}">2023-01-01 10:00</td>
+                <td th:text="${#numbers.formatDecimal(orderSummary.totalAmount, 0, 'COMMA', 0, 'POINT')} + '원'">50,000원</td>
+                <td th:text="${orderSummary.status.displayName}">결제 완료</td>
+                <td>
+                    <!-- 주문 상태가 PENDING(결제 대기 중) 또는 PAID(결제 완료)일 때만 취소 버튼 표시 -->
+                    <button type="button" class="cancel-button"
+                            th:if="${orderSummary.status.name() == 'PENDING' or orderSummary.status.name() == 'PAID'}"
+                            th:data-order-id="${orderSummary.orderId}"> <!-- 주문 ID를 data 속성으로 저장 -->
+                        취소
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // Thymeleaf를 통해 주입된 변수 (필요시)
+    const currentMemberId = [[${memberId}]]; // 컨트롤러에서 memberId를 model에 추가했다면 사용 가능
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // 모든 취소 버튼에 이벤트 리스너 추가
+        const cancelButtons = document.querySelectorAll('.cancel-button');
+
+        cancelButtons.forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderIdToCancel = event.target.dataset.orderId; // data-order-id 속성에서 주문 ID 가져옴
+
+                if (confirm(`주문 번호 ${orderIdToCancel}을(를) 정말 취소하시겠습니까?`)) {
+                    try {
+                        const response = await fetch(`/orders/${orderIdToCancel}/cancel`, {
+                            method: 'POST', // POST 또는 DELETE 요청 (여기서는 POST 사용)
+                            headers: {
+                                'Content-Type': 'application/json',
+                                // 'Authorization': 'Bearer YOUR_JWT_TOKEN' // 인증 토큰 필요시 추가
+                            }
+                        });
+
+                        const responseData = await response.json(); // ApiResponse<Void> 형태 예상
+
+                        if (response.ok && responseData.status >= 200 && responseData.status < 300) {
+                            alert(responseData.message || "주문이 성공적으로 취소되었습니다.");
+                            window.location.reload(); // 페이지 새로고침하여 주문 목록 업데이트
+                        } else {
+                            const errorMessage = responseData.message || `주문 취소 실패: ${response.status} ${response.statusText}`;
+                            alert(errorMessage);
+                        }
+                    } catch (error) {
+                        console.error('주문 취소 요청 중 오류 발생:', error);
+                        alert('주문 취소 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
