@@ -41,7 +41,7 @@ jobs:
       - name: Create application.yml from Secret
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.SHOP_SPRING_YML }}" | base64 -d > src/main/resources/application.yml
+          echo "${{ secrets.SHOP_SPRING_V2_YML }}" | base64 -d > src/main/resources/application.yml
 
       # 6. 테스트 및 빌드
       - name: Build and run tests
