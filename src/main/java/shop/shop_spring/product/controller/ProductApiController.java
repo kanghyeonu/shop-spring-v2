@@ -1,5 +1,6 @@
 package shop.shop_spring.product.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Tag(name = "Product API", description = "상품 관련 API")
 public class ProductApiController {
     private final ProductServiceImpl productService;
 

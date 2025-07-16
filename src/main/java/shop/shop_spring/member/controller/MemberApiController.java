@@ -32,7 +32,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
-@Tag(name = "member API", description = "회원 관련 API(회원 가입, 로그인, 회원 정보 수정 등)")
+@Tag(name = "Member API", description = "회원 관련 API(회원 가입, 로그인, 회원 정보 수정 등)")
 public class MemberApiController {
     private final MemberServiceImpl memberService;
     private final ProductService productService;
